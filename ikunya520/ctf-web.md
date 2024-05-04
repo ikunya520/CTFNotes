@@ -34,7 +34,11 @@ Stash：使用 git stash pop命令
 #### HG泄露：
  使用Mercurial 进行版本控制时处理不当，和SVN大同小异
 方法： ./rip-hg-pl -v -u url/.hg/
-grep -r flag* 用来匹配flag文件
+grep -r flag* 用来匹配flag文件  
+<br>
+<br>
+<br>
+
 ### 密码口令：
 弱口令：
 默认口令：
@@ -62,7 +66,7 @@ bp抓包修改成image/jpeg
 ##### 文件名绕过：
  Apache HTTP 服务器，可以尝试phtml,php3,php4,php5,pht等后缀名，但前提是配置文件中有 AddType application/x-httpd-php .php .phtml .phps .php5 .pht .htaccess
 
-#### .htaccess绕过:
+#### .htaccess绕过:Apache服务器
 通过重写文件解析规则绕过，将.jpg文件当成php文件执行。内容诸如`<FilesMatch "shell.jpg">
 SetHandler application/x-httpd-php
 </FilesMatch>`注意先上传.htaccess再上传图片木马
@@ -75,13 +79,19 @@ SetHandler application/x-httpd-php
 #### Windows文件流特性绕过
 文件名改成xx.php::$DATA,上传成功后保存xx.php
 #### MIME绕过：
+通过修改Content-Type的值来进行绕过
 #### 00截断：
 原理：0x00是字符串的结束标识符，攻击者可以利用手动添加字符串标识符的方式来将后面的内容进行截断，而后面的内容又可以帮助我们绕开检测。上传路径%00截断:save_path改成/upload/11.php%00，最后保存下来就是11.php
-条件：php<5.3.29，且GPC关闭
+条件：php<5.3.29，且magic_quotes_gpc关闭
 **POST**：%00在GET中被url解码后是空字符，但是在POST中%00不会被url解码。所以只能通过burpsuite修改hex值为00进行截断
 #### 双写绕过：
 文件名改成xx.phphpp，适用与检测到非法后缀就直接删除
 #### 文件头部检查：
+GIF89a  
+图片马的制作！！  
+常见题目：使用getimagesize获取文件类型，使用php_exif判断文件类型可以直接使用图片马
+#### 条件竞争：
+
 ### XSS：
 反射型：
 存储型：
