@@ -525,6 +525,9 @@ sqlmap.py  -u  “http://192.168.1.xxx/sql1/union.php?id=1 ” --current  -db
 
 10）获取当前网站数据库的用户名称  
 sqlmap.py  -u  “http://192.168.1.xxx/sql1/union.php?id=1 ” --current  -user
+### 代码审计:
+md5,sha1强弱绕过方式:https://www.cnblogs.com/dre0m1/p/16062369.html  
+**md5和sha1强比较绕过方式:用不同类型,例如1和'1'。!==是弱比较 ！！**
 ### 文件上传：
 #### 前端JS验证：
 1）火狐浏览器输入about config禁用javascript  2）F12开发者模式修改JS代码后上传  3）burp抓包修改
@@ -609,16 +612,32 @@ if __name__ == '__main__':
         t.join()
 
 ```
+#### 其他知识
+#### 1)linux软连接:参考博客:https://c1oudfl0w0.github.io/blog/2023/05/29/CISCN2023-%E5%A4%8D%E7%8E%B0/
+```ln -s target source``` 
+ln -s：表示创建一个软连接；  
+target：表示目标文件（夹），即源文件。  
+source：表示当前目录的软连接名，即被创建出来的软连接名称以及放置在何处。  
+
 ### XSS：跨站脚本攻击，攻击者往web页面插入恶意的JavaScript代码
 #### 反射型：非持久性XSS
 #### 存储型：攻击数据存储在目标服务器的数据库中
 #### DOM型：使用DOM动态访问更新文档的内容，结构，样式。HTML标签都是节点，节点组成了节点树。通过HTML DOM可以对树上所有节点进行修改。服务器响应不会处理XSS代码，而是用户浏览器处理这个响应时，DOM对象会处理XSS代码，触发XSS漏洞
 
-### SSRF：
-内网访问：
-伪协议读取文件：
-端口扫描：
-post请求：
+### SSRF：服务器请求伪造
+#### 内网访问：
+#### 伪协议读取文件：
+网站的目录一般都在/var/www/html/
+file://从文件系统中读取文件内容.file:///etc/passwd  读取文件passwd  
+file:///etc/hosts  显示当前操作系统网卡  
+file:///proc/net/arp 显示arp缓存表,寻找其他主机  
+file:///proc/net/fib_trie 显示当前网段路由信息  
+#### 端口扫描：dict伪协议：字典服务协议，访问字典资源，ftp伪协议，sftp伪协议 
+dict://+ip:端口+/TCP/IP 数据  
+#### HTTP伪协议:目录扫描
+http://ip/常见文件名
+#### gopher伪协议
+#### post请求：
 上传文件：
 fastCG协议：
 redis协议：
